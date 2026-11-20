@@ -7,12 +7,15 @@
 // Declaracion de tipos de datos que emitira el boton
 // Declaracion de los estados del sistema
 // Registro serial de cada transicion
+// Temporizador de respaldo de 8 s
+// Ignicion de 1000 ms
 
 int const boton = 2;
 
 int estadoBoton = HIGH;
 int ultimalectura = HIGH;
 int lectura = HIGH;
+const int ignicion = 4;
 
 unsigned long tiempoinicial = 0;
 unsigned long tiempofinal = 0;
@@ -20,6 +23,12 @@ unsigned long duracion = 0;
 unsigned long tiempoRebote = 0;
 const unsigned long antirrebote=50;
 unsigned long tiempoInicioAscenso = 0;
+
+//variables para el LED de ignicion
+
+unsigned long tiempoInicioIgnicion = 0;
+bool ignicionactiva = false;
+const unsigned long tiempoIgnicion = 1000;
 
 enum EventoBoton {
     NINGUNO,
@@ -59,6 +68,12 @@ void cambiarEstado (EstadoSistema nuevoEstado){
 
     if(estadoActual == ASCENT){
         tiempoInicioAscenso = millis();
+    }
+
+    if (estadoActual == DEPLOYMENT){
+        tiempoInicioIgnicion = millis();
+        digitalWrite(ignicion,HIGH);
+        ignicionactiva  =true;
     }
 
     Serial.println("[");
@@ -115,7 +130,15 @@ void clasificarEvento(EventoBoton evento){
     }
 }
 
+void actulizarIgnicion (){
+    if(ignicionactiva == true){
+        if(millis()-tiempoInicioIgnicion >= tiempoIgnicion){
+            digitalWrite(ignicion,LOW);
+            ignicionactiva = false;
+        }
+    }
 
+}
 
 void setup() {
 
@@ -124,7 +147,9 @@ void setup() {
     Serial.println("Sistema de recuperacion AAIAQ");
     Serial.println("Inicializando firmware...");
 
-    pinMode(boton,INPUT_PULLUP);
+    pinMode(boton,INPUT_PULLUP); // Declaramos el boton como entrada y en configuracion Pull Up
+    pinMode(ignicion,OUTPUT); // Led indicador de ignicion
+    digitalWrite(ignicion,LOW);
 }
 
 
@@ -159,11 +184,12 @@ void loop() {
     
     ultimalectura = lectura;
     // comprobacion de que hayan transcurridpo 8s de ASCENT
-    if(estadoActual == ASCENT){
+    if(estadoActual == ASCENT){ 
         if(millis()-tiempoInicioAscenso >= 8000){
             cambiarEstado(DEPLOYMENT);
         }
     }
+    actulizarIgnicion();
 
 
 }
