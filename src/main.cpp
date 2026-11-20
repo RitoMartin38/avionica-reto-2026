@@ -4,6 +4,7 @@
 // Configuracion inicial del sistema
 // Configuracion de lectura de boton usando PULLUP
 // Implementacion de sistema de antirrebote
+// Declaracion de tipos de datos que emitira el boton
 
 int const boton = 2;
 
@@ -16,6 +17,25 @@ unsigned long tiempofinal = 0;
 unsigned long duracion = 0;
 unsigned long tiempoRebote = 0;
 const unsigned long antirrebote=50;
+
+enum EventoBoton {
+    NINGUNO,
+    PULSACION_CORTA,
+    PULSACION_LARGA
+};
+
+// funcion para clasificar la pulsacion del boton (mas adelante se llamará a la funcion
+EventoBoton clasificarPulsacion (unsigned long duracion){
+    if (duracion < 1000){
+        return PULSACION_CORTA;
+    }
+    if (duracion >= 2000){
+        return PULSACION_LARGA;
+    }
+    else{
+        return NINGUNO;
+    }
+}
 
 void setup() {
 
@@ -43,7 +63,22 @@ void loop() {
             else{
                 tiempofinal = millis();
                 duracion = tiempofinal-tiempoinicial;
-                Serial.println(duracion);
+                
+                EventoBoton evento = clasificarPulsacion(duracion);
+                switch(evento){
+
+                    case PULSACION_CORTA:
+                    Serial.println("PULSACION CORTA");
+                    break;
+
+                    case PULSACION_LARGA:
+                    Serial.println("PULSACION LARGA");
+                    break;
+
+                    case NINGUNO:
+                    Serial.println("EVENTO IGNORADO");
+                    break;
+                }
             }
         }
     }
