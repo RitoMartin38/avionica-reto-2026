@@ -6,6 +6,7 @@
 // Implementacion de sistema de antirrebote
 // Declaracion de tipos de datos que emitira el boton
 // Declaracion de los estados del sistema
+// Registro serial de cada transicion
 
 int const boton = 2;
 
@@ -49,12 +50,28 @@ enum EstadoSistema{
 
 EstadoSistema estadoActual = IDLE;
 
+// funcion para hacer el seguimiento adecuado en monitor serial
+// actualiza el estado
+void cambiarEstado (EstadoSistema nuevoEstado){
+    EstadoSistema estadoAnterior = estadoActual;
+    estadoActual = nuevoEstado;
+
+    Serial.println("[");
+    Serial.println(millis());
+    Serial.println("ms]");
+
+    Serial.println((int)estadoAnterior);
+    Serial.println("->");
+    Serial.println((int)estadoActual);
+}
+
+// clasificamos los eventos y definimos el estado
 void clasificarEvento(EventoBoton evento){
     switch(estadoActual){
         case IDLE:
         switch(evento){
             case PULSACION_LARGA:
-            estadoActual = ARMED;
+            cambiarEstado(ARMED);
             break;
 
             default: break;
@@ -63,10 +80,10 @@ void clasificarEvento(EventoBoton evento){
         case ARMED:
         switch(evento){
             case PULSACION_LARGA:
-            estadoActual= IDLE;
+            cambiarEstado(IDLE);
             break;
             case PULSACION_CORTA:
-            estadoActual=ASCENT;
+            cambiarEstado(ASCENT);
             break;
             default: break;
         }break;
@@ -74,7 +91,7 @@ void clasificarEvento(EventoBoton evento){
         case ASCENT:
         switch(evento){
             case PULSACION_CORTA:
-            estadoActual=DEPLOYMENT;
+            cambiarEstado(DEPLOYMENT);
             break;
             default: break;
         }break;
@@ -82,7 +99,7 @@ void clasificarEvento(EventoBoton evento){
         case DEPLOYMENT:
         switch(evento){
             case PULSACION_CORTA:
-            estadoActual  = LANDED;
+            cambiarEstado(LANDED);
             break;
             default: break;
         }break;
@@ -92,6 +109,8 @@ void clasificarEvento(EventoBoton evento){
         default: break;
     }
 }
+
+
 
 void setup() {
 
