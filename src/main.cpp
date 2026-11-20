@@ -3,15 +3,20 @@
 
 // Configuracion inicial del sistema
 // Configuracion de lectura de boton usando PULLUP
+// Implementacion de sistema de antirrebote
 
 int const boton = 2;
 
 int estadoBoton = HIGH;
-int estadoAnterior = HIGH;
+int ultimalectura = HIGH;
+int lectura = HIGH;
 
 unsigned long tiempoinicial = 0;
 unsigned long tiempofinal = 0;
 unsigned long duracion = 0;
+unsigned long tiempoRebote = 0;
+const unsigned long antirrebote=50;
+
 void setup() {
 
     Serial.begin(9600);
@@ -24,23 +29,27 @@ void setup() {
 
 
 void loop() {
-    estadoBoton = digitalRead(boton);
-    if(estadoAnterior == HIGH && estadoBoton == LOW){
-        tiempoinicial = millis();
-        Serial.println("Boton presionado");
+    lectura = digitalRead(boton);
+
+    if(lectura != ultimalectura){
+        tiempoRebote  = millis();
     }
-
-    if(estadoAnterior == LOW && estadoBoton == HIGH){
-        tiempofinal = millis();
-        duracion = tiempofinal-tiempoinicial;
-
-        Serial.println(duracion);
+    if(millis()-tiempoRebote >= antirrebote){
+        if(lectura != estadoBoton){
+            estadoBoton = lectura;
+            if (estadoBoton == LOW){
+                tiempoinicial = millis();
+            }
+            else{
+                tiempofinal = millis();
+                duracion = tiempofinal-tiempoinicial;
+                Serial.println(duracion);
+            }
+        }
     }
-
-    // Se actualiza la lectura anterior
-
-    estadoAnterior = estadoBoton;
 
     
+    ultimalectura = lectura;
+
 
 }
