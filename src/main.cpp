@@ -5,6 +5,7 @@
 // Configuracion de lectura de boton usando PULLUP
 // Implementacion de sistema de antirrebote
 // Declaracion de tipos de datos que emitira el boton
+// Declaracion de los estados del sistema
 
 int const boton = 2;
 
@@ -37,6 +38,61 @@ EventoBoton clasificarPulsacion (unsigned long duracion){
     }
 }
 
+// Funcion para clasificar los estados del sistema
+enum EstadoSistema{
+    IDLE,
+    ARMED,
+    ASCENT,
+    DEPLOYMENT,
+    LANDED
+};
+
+EstadoSistema estadoActual = IDLE;
+
+void clasificarEvento(EventoBoton evento){
+    switch(estadoActual){
+        case IDLE:
+        switch(evento){
+            case PULSACION_LARGA:
+            estadoActual = ARMED;
+            break;
+
+            default: break;
+        } break;
+
+        case ARMED:
+        switch(evento){
+            case PULSACION_LARGA:
+            estadoActual= IDLE;
+            break;
+            case PULSACION_CORTA:
+            estadoActual=ASCENT;
+            break;
+            default: break;
+        }break;
+
+        case ASCENT:
+        switch(evento){
+            case PULSACION_CORTA:
+            estadoActual=DEPLOYMENT;
+            break;
+            default: break;
+        }break;
+
+        case DEPLOYMENT:
+        switch(evento){
+            case PULSACION_CORTA:
+            estadoActual  = LANDED;
+            break;
+            default: break;
+        }break;
+
+        case LANDED:
+        break;
+        default: break;
+    }
+}
+
 void setup() {
 
     Serial.begin(9600);
@@ -65,19 +121,11 @@ void loop() {
                 duracion = tiempofinal-tiempoinicial;
                 
                 EventoBoton evento = clasificarPulsacion(duracion);
-                switch(evento){
-
-                    case PULSACION_CORTA:
-                    Serial.println("PULSACION CORTA");
-                    break;
-
-                    case PULSACION_LARGA:
-                    Serial.println("PULSACION LARGA");
-                    break;
-
-                    case NINGUNO:
-                    Serial.println("EVENTO IGNORADO");
-                    break;
+                
+                if(evento != NINGUNO){
+                    clasificarEvento(evento);
+                    Serial.println("Estado Actual: ");
+                    Serial.println((int)estadoActual);
                 }
             }
         }
