@@ -19,6 +19,7 @@ unsigned long tiempofinal = 0;
 unsigned long duracion = 0;
 unsigned long tiempoRebote = 0;
 const unsigned long antirrebote=50;
+unsigned long tiempoInicioAscenso = 0;
 
 enum EventoBoton {
     NINGUNO,
@@ -55,6 +56,10 @@ EstadoSistema estadoActual = IDLE;
 void cambiarEstado (EstadoSistema nuevoEstado){
     EstadoSistema estadoAnterior = estadoActual;
     estadoActual = nuevoEstado;
+
+    if(estadoActual == ASCENT){
+        tiempoInicioAscenso = millis();
+    }
 
     Serial.println("[");
     Serial.println(millis());
@@ -143,6 +148,7 @@ void loop() {
                 
                 if(evento != NINGUNO){
                     clasificarEvento(evento);
+                    
                     Serial.println("Estado Actual: ");
                     Serial.println((int)estadoActual);
                 }
@@ -152,6 +158,12 @@ void loop() {
 
     
     ultimalectura = lectura;
+    // comprobacion de que hayan transcurridpo 8s de ASCENT
+    if(estadoActual == ASCENT){
+        if(millis()-tiempoInicioAscenso >= 8000){
+            cambiarEstado(DEPLOYMENT);
+        }
+    }
 
 
 }
