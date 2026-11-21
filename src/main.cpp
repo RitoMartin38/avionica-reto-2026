@@ -1,4 +1,3 @@
-
 #include <Arduino.h>
 
 // Configuracion inicial del sistema
@@ -9,6 +8,7 @@
 // Registro serial de cada transicion
 // Temporizador de respaldo de 8 s
 // Ignicion de 1000 ms
+// Mejorar interaccion con monitor serie
 
 int const boton = 2;
 
@@ -30,6 +30,18 @@ unsigned long tiempoInicioIgnicion = 0;
 bool ignicionactiva = false;
 const unsigned long tiempoIgnicion = 1000;
 
+// Funcion para clasificar los estados del sistema
+enum EstadoSistema{
+    IDLE,
+    ARMED,
+    ASCENT,
+    DEPLOYMENT,
+    LANDED
+};
+
+EstadoSistema estadoActual = IDLE;
+
+
 enum EventoBoton {
     NINGUNO,
     PULSACION_CORTA,
@@ -49,16 +61,31 @@ EventoBoton clasificarPulsacion (unsigned long duracion){
     }
 }
 
-// Funcion para clasificar los estados del sistema
-enum EstadoSistema{
-    IDLE,
-    ARMED,
-    ASCENT,
-    DEPLOYMENT,
-    LANDED
-};
 
-EstadoSistema estadoActual = IDLE;
+
+// Funcion para registro de eventos y transiciones
+const char* nombreEstado(EstadoSistema estado){
+    switch (estado){
+        case IDLE:
+        return "IDLE";
+        
+        case ARMED:
+        return "ARMED";
+    
+        case ASCENT:
+        return "ASCENT";
+        
+        case DEPLOYMENT:
+        return "DEPLOYMENT";
+    
+        case LANDED:
+        return "LANDED";
+        
+        default:
+        return "DESCONOCIDO";
+    
+    }
+}
 
 // funcion para hacer el seguimiento adecuado en monitor serial
 // actualiza el estado
@@ -76,13 +103,13 @@ void cambiarEstado (EstadoSistema nuevoEstado){
         ignicionactiva  =true;
     }
 
-    Serial.println("[");
-    Serial.println(millis());
-    Serial.println("ms]");
+    Serial.print("[");
+    Serial.print(millis());
+    Serial.print("ms]");
 
-    Serial.println((int)estadoAnterior);
-    Serial.println("->");
-    Serial.println((int)estadoActual);
+    Serial.print(nombreEstado (estadoAnterior));
+    Serial.print("->");
+    Serial.println(nombreEstado (estadoActual));
 }
 
 // clasificamos los eventos y definimos el estado
@@ -140,6 +167,8 @@ void actulizarIgnicion (){
 
 }
 
+
+
 void setup() {
 
     Serial.begin(9600);
@@ -173,9 +202,6 @@ void loop() {
                 
                 if(evento != NINGUNO){
                     clasificarEvento(evento);
-                    
-                    Serial.println("Estado Actual: ");
-                    Serial.println((int)estadoActual);
                 }
             }
         }
