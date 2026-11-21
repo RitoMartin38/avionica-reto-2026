@@ -1,0 +1,242 @@
+
+\documentclass[10pt,a4paper]{article}
+
+% PAQUETES
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{array}
+\usepackage{enumitem}
+
+% CONFIGURACION
+\geometry{
+    top=1.5cm,
+    bottom=1.5cm,
+    left=1.7cm,
+    right=1.7cm
+}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\setlist{nosep}
+\hypersetup{colorlinks=true,allcolors=blue}
+
+\begin{document}
+
+%---------------------------------
+% ENCABEZADO
+%---------------------------------
+
+\begin{center}
+    {\Large \textbf{Sistema de recuperación mediante
+    una máquina de estados finitos}}\\
+    \vspace{2mm}
+    {\normalsize Reto de Reclutamiento -- División de Aviónica AAIAQ}\\
+    \vspace{2mm}
+    Nombre: Jiménez Martínez Rito Martin \quad
+    Carrera: Ingeniería Aeroespacial\\
+    Semestre: Primero \quad
+    Ruta: 3 -- Firmware
+\end{center}
+
+\hrule
+\vspace{3mm}
+
+\section{Objetivo}
+
+Desarrollar un firmware para controlar la lógica de
+un sistema de recuperación de una aeronave experimental
+mediante una máquina de estados finitos. El sistema debe
+gestionar las transiciones entre cinco estados, interpretar
+pulsaciones cortas y ejecutar un pulso de ignición de 1000 ms
+sin bloquear la ejecución del programa.
+
+\section{Diseño del sistema}
+
+\subsection{Máquina de estados}
+
+Se implementó una máquina de estados finitos utilizando
+un tipo enumerado (\texttt{enum}). Los estados definidos
+son IDLE, ARMED, ASCENT, DEPLOYMENT y LANDED.
+
+Las transiciones dependen de los eventos detectados
+por el botón y del temporizador de respaldo.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\linewidth]{diagrama_estados.png}
+    \caption{Diagrama de estados de la máquina de recuperación.}
+    \label{fig:transiciones}
+\end{figure}
+Los eventos que no aparecen en la tabla se
+ignoran y se registran mediante el monitor serial.
+
+\subsection{Lectura y antirrebote del botón}
+
+Dado que en botones físicos se pueden llegar a 
+captar oscilaciones elecéctricas que afectan la interpretación
+de los datos, se decidió agregar un tipo de mecanismo de
+antirrebote por software.
+
+La lectura se considera estable cuando permanece sin
+cambios durante un intervalo de tiempo definido por
+el parámetro de antirrebote.
+
+\begin{equation}
+t_{\mathrm{actual}}-t_{\mathrm{cambio}}
+\geq T_{\mathrm{debounce}}
+\label{eq:debounce}
+\end{equation}
+
+El tiempo que se mantiene presionado el botón 
+se determina mediante la diferencia entre los instantes
+de liberación y detección de la pulsación. Se ocupó una 
+configuracion PULL UP para que en estado inicial mantenga un
+estado HIGH. 
+
+\begin{equation}
+T_{\mathrm{pulsacion}} =
+t_{\mathrm{liberacion}}-t_{\mathrm{presion}}
+\label{eq:pulsacion}
+\end{equation}
+
+\subsection{Gestión de temporizadores}
+
+Se utilizó la función \texttt{millis()} para poder manejar
+los intervalos de tiempo sin necesidad de bloquear la ejecución
+del programa mediante \texttt{delay()}.
+
+En el estado ASCENT se implementó un temporizador
+de respaldo de 8 segundos que cambia de forma automática al
+estado DEPLOYMENT cuando no se detecta una pulsación corta.
+
+Al ingresar a DEPLOYMENT se activa la salida de
+ignición durante exactamente 1000 ms. La activación
+se controla mediante un temporizador independiente
+y no debe repetirse.
+
+%---------------------------------
+% PAGINA 2
+%---------------------------------
+
+\newpage
+
+\section{Implementación y resultados}
+
+\subsection{Indicación visual y registro serial}
+
+Se utilizaron indicadores LED de diferentes colores para
+distinguir visualmente los cinco estados del sistema mediante
+patrones de iluminación definidos en el firmware. IDLE (azul), 
+ARMED (Azul cian), ASCENT (verde), DEPLOYMENT (amarillo) y LANDED (rojo).
+
+Además, se implementó un registro serial que informa
+las transiciones de estado y los eventos ignorados,
+incluyendo una marca de tiempo en milisegundos.
+
+El formato de registro utilizado es:
+
+\begin{verbatim}
+[12345 ms] Evento recibido: Pulsación larga
+[12345 ms] ARMED -> ASCENT
+\end{verbatim}
+
+\subsection{Entorno de simulación}
+
+El firmware se desarrolló en Visual Studio Code 
+utilizando ARDUINO UNO y se verificó
+mediante el simulador Wokwi.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.3\linewidth]
+    {Simulation status LED.png}
+    \caption{Simulación del sistema de recuperación y sus indicadores LED.}
+    \label{fig:simulacion}
+\end{figure}
+
+\subsection{Validación funcional}
+
+Se realizaron pruebas para verificar las transiciones,
+los eventos ignorados y el comportamiento temporal
+del sistema.
+
+\begin{table}[H]
+\centering
+\caption{Resultados de las pruebas funcionales.}
+\label{tab:pruebas}
+\small
+\begin{tabular}{p{0.55\linewidth}p{0.30\linewidth}}
+\toprule
+Prueba & Resultado\\
+\midrule
+Pulsación corta en IDLE & [Evento ignorado]\\
+Pulsacion larga en ARMED & [ARMED -> IDLE]\\
+Pulsacion corta en ARMED & [ARMED -> ASCENT]\\
+Transición de ARMED a ASCENT & [ARMED -> ASCENT]\\
+Despliegue mediante pulsación corta & [ASCENT -> DEPLOYMENT]\\
+Temporizador de respaldo de 8 s & [ASCENT -> DEPLOYMENT]\\
+Pulso de ignición de 1000 ms & LED Naranja encendido durante 1000 ms\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Conclusiones}
+
+El desarrollo permitió implementar y simular una lógica
+de recuperación basada en estados, se hizo un adecuado control temporal sin
+bloquear las funciones. Se pudo leer e interpretar correctamente los eventos del boton, 
+y así mismo la incorporacion del mecanismo de antirrebote. De igual manera se pudo conectar
+adecuadamente los estados de la maquina con el comportamiento de los LEDs. Algunas mejoras que
+incorporaría en el futuro sería una mejor organizacion de la declaracion de las variables y 
+funciones independientes, y así mismo agregrar más restricciones al programa para minimizar
+las posibilidades de encontrar errores.
+La simulación interactiva puede consultarse en:
+\url{https://wokwi.com/projects/481283162667649025}
+
+%---------------------------------
+% PAGINA 3
+%---------------------------------
+
+\newpage
+
+\section{Bitácora de obstáculos}
+
+\subsection{Problema 1: Diferenciar entre pulsacion larga y corta}
+
+Uno de los mas grandes retos durante el desarrollo del firmware fue implementar un mecanismo que permitiera distinguir entre pulsaciones cortas y largas del botón. El sistema debía interpretar una pulsación corta cuando su duración fuera menor a 1 segundo y una pulsación larga cuando alcanzara o superara los 2 segundos.
+
+Al principio, se intentó evaluar el estado del boron durante su lectrua, sin embargo, comprobar únicamente si el botón estaba presionado no permitía conocer la duración total de la pulsación. También era necesario diferenciar el momento en que comenzaba la presión del momento en que el usuario liberaba el botón.
+
+Entoces la detección de la presión y la detección de la liberación serían dos eventos que ayudarían a conocer el tiempo en que se mantiene presionado. Al comenzar la pulsación se almacena el instante inicial mediante millis(). Posteriormente, cuando se detecta la liberación, se calcula la duración restando el tiempo en el que se liberó menos el tiempo en que presionó. 
+
+\subsection{Problema 2: Implementación de temporizadores sin bloquear el programa}
+
+Otro desafío fue implementar los intervalos de tiempo requeridos por la máquina de estados sin interrumpir la ejecución general del firmware. El sistema necesitaba controlar dos eventos temporales importantes: la activación del despliegue de respaldo después de 8 segundos en ASCENT y la duración exacta de 1000 ms del pulso de ignición en DEPLOYMENT.
+El problema de utilizar esperas bloqueantes  como delay(), es que durante su ejecución el microcontrolador deja de procesar otras tareas del programa. Esto podría impedir la lectura del botón, retrasar la detección de eventos y afectar la actualizacion de los LEDs
+
+el problema principal consistió en gestionar los diferentes intervalos de tiempo dentro de un mismo ciclo de ejecución. No bastaba con esperar a que transcurrieran 8 segundos o 1000 ms; el programa debía continuar leyendo el botón y actualizando las salidas mientras esos intervalos transcurrían. Y además, no estaba acostumbrado ni muy familiarizado con la funcion millis().
+
+Entonces, tal como lo menciona el documento proporcionado por la AAIAQ, se utilizó la función millis() para obtener el tiempo transcurrido desde el inicio del programa. Al entrar en un estado que requiere temporización, se almacena el instante inicial y posteriormente se compara con el tiempo actual.
+
+Cuando el tiempo transcurrido alcanza el intervalo definido, se ejecuta la acción que le corresponde sin detener el ciclo principal del programa.De esta manera, el temporizador de respaldo puede provocar la transición de ASCENT a DEPLOYMENT después de 8 segundos, mientras que el temporizador de ignición permite mantener activa la salida durante 1000 ms y apagarla posteriormente.
+
+\section{Referencias}
+
+\begin{enumerate}
+    \item [1] YouTube, “BOTONES en ARDUINO + 2 ejercicios,” YouTube. [En línea]. Disponible en:
+    \url{https://youtu.be/DG1g3IiFllQ}
+    \item [2] YouTube, “Aprende GitHub desde cero - paso a paso,” YouTube. [En línea]. Disponible en:
+    \url{https://youtu.be/qYaw4gdQzx4}
+\end{enumerate}
+
+\textbf{Uso de inteligencia artificial:}
+Se utilizó ChatGPT para aprender el uso de numerador num y funcion millis(). Así mismo, Claude y ChatGPT ayudaron a leer, interpretar y decidir donde podría fallar mi código para así implementar protecciones. 
+
+\end{document}
