@@ -43,16 +43,6 @@ bool estadoParpadeo = false;
 const unsigned long intervaloAscent = 500;
 const unsigned long intervaloDeployment  = 150; // el led de deployment parpadeará mas rapido que el ascent
 
-// funcion para parpadeo de leds
-void actualizarParpadeo (unsigned long intervalo, int led){
-    if (millis()-tiempoAnteriorLed >= intervalo){
-        tiempoAnteriorLed = millis();
-        estadoParpadeo = !estadoParpadeo;
-
-    }
-    digitalWrite(led, estadoParpadeo);
-
-}
 // Funcion para clasificar los estados del sistema
 enum EstadoSistema{
     IDLE,
@@ -70,6 +60,18 @@ enum EventoBoton {
     PULSACION_CORTA,
     PULSACION_LARGA
 };
+
+// funcion para parpadeo de leds
+void actualizarParpadeo (unsigned long intervalo, int led){
+    if (millis()-tiempoAnteriorLed >= intervalo){
+        tiempoAnteriorLed = millis();
+        estadoParpadeo = !estadoParpadeo;
+
+    }
+    digitalWrite(led, estadoParpadeo);
+
+}
+
 
 // funcion para clasificar la pulsacion del boton (mas adelante se llamará a la funcion
 EventoBoton clasificarPulsacion (unsigned long duracion){
