@@ -37,6 +37,22 @@ const int ledAscent = 7;
 const int ledDeployment = 8;
 const int ledLanded = 9;
 
+// declaracion de variables para hacer parpadear los LEDS ascent y deployment, los demás se mantendrán estáticos
+unsigned long tiempoAnteriorLed = 0;
+bool estadoParpadeo = false;
+const unsigned long intervaloAscent = 500;
+const unsigned long intervaloDeployment  = 150; // el led de deployment parpadeará mas rapido que el ascent
+
+// funcion para parpadeo de leds
+void actualizarParpadeo (unsigned long intervalo, int led){
+    if (millis()-tiempoAnteriorLed >= intervalo){
+        tiempoAnteriorLed = millis();
+        estadoParpadeo = !estadoParpadeo;
+
+    }
+    digitalWrite(led, estadoParpadeo);
+
+}
 // Funcion para clasificar los estados del sistema
 enum EstadoSistema{
     IDLE,
@@ -97,8 +113,16 @@ const char* nombreEstado(EstadoSistema estado){
 // funcion para hacer el seguimiento adecuado en monitor serial
 // actualiza el estado
 void cambiarEstado (EstadoSistema nuevoEstado){
+    if(nuevoEstado== estadoActual){
+        return;
+    }
     EstadoSistema estadoAnterior = estadoActual;
     estadoActual = nuevoEstado;
+
+    if(estadoActual == ASCENT || estadoActual == DEPLOYMENT){
+        tiempoAnteriorLed  = millis();
+        estadoParpadeo = true;
+    }
 
     if(estadoActual == ASCENT){
         tiempoInicioAscenso = millis();
@@ -232,11 +256,11 @@ void actualizarLed(){
         break;
 
         case ASCENT:
-        digitalWrite(ledAscent,HIGH);
+        actualizarParpadeo(intervaloAscent, ledAscent); // llamamos a la funcion actualizar parpadeo
         break;
 
         case DEPLOYMENT:
-        digitalWrite(ledDeployment,HIGH);
+        actualizarParpadeo(intervaloDeployment,ledDeployment);
         break;
         
         case LANDED:
