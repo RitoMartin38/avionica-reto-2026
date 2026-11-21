@@ -30,6 +30,13 @@ unsigned long tiempoInicioIgnicion = 0;
 bool ignicionactiva = false;
 const unsigned long tiempoIgnicion = 1000;
 
+// Declaracion de los LEDS para cada estado
+const int ledIdle = 5;
+const int ledArmed = 6;
+const int ledAscent = 7;
+const int ledDeployment = 8;
+const int ledLanded = 9;
+
 // Funcion para clasificar los estados del sistema
 enum EstadoSistema{
     IDLE,
@@ -203,6 +210,43 @@ void actulizarIgnicion (){
 
 }
 
+//funcion de actualizacion de los LEDS
+void apagarLed (){
+digitalWrite(ledIdle,LOW);
+digitalWrite(ledArmed,LOW);
+digitalWrite(ledAscent,LOW);
+digitalWrite(ledDeployment,LOW);
+digitalWrite(ledLanded,LOW);
+
+}
+
+void actualizarLed(){
+    apagarLed();
+    switch(estadoActual){
+        case IDLE:
+        digitalWrite(ledIdle,HIGH);
+        break;
+
+        case ARMED:
+        digitalWrite(ledArmed,HIGH);
+        break;
+
+        case ASCENT:
+        digitalWrite(ledAscent,HIGH);
+        break;
+
+        case DEPLOYMENT:
+        digitalWrite(ledDeployment,HIGH);
+        break;
+        
+        case LANDED:
+        digitalWrite(ledLanded,HIGH);
+        break;
+
+        default: break;
+}
+}
+
 
 
 void setup() {
@@ -215,6 +259,14 @@ void setup() {
     pinMode(boton,INPUT_PULLUP); // Declaramos el boton como entrada y en configuracion Pull Up
     pinMode(ignicion,OUTPUT); // Led indicador de ignicion
     digitalWrite(ignicion,LOW);
+
+    // configuracion de las salidas de los LEDS
+    pinMode(ledIdle,OUTPUT);
+    pinMode(ledArmed,OUTPUT);
+    pinMode(ledAscent,OUTPUT);
+    pinMode(ledDeployment,OUTPUT);
+    pinMode(ledLanded,OUTPUT);
+    actualizarLed();
 }
 
 
@@ -250,6 +302,7 @@ void loop() {
         }
     }
     actulizarIgnicion();
+    actualizarLed();
 
 
 }
