@@ -112,13 +112,36 @@ void cambiarEstado (EstadoSistema nuevoEstado){
     Serial.println(nombreEstado (estadoActual));
 }
 
+const char* nombreEvento(EventoBoton evento){
+    switch (evento){
+        case PULSACION_CORTA:
+        return "Pulsacion corta";
+
+        case PULSACION_LARGA:
+        return "Pulsacion larga";
+
+        case NINGUNO:
+        return("Pulsacion no clasificada");
+
+        default:
+        return "DESCONOCIDO";
+    }
+}
+
 // clasificamos los eventos y definimos el estado
 void clasificarEvento(EventoBoton evento){
+    Serial.print("[");
+    Serial.print(millis());
+    Serial.print("ms] Evento recibido: ");
+    Serial.println(nombreEvento(evento));
+
+    bool eventoProcesado = false;
     switch(estadoActual){
         case IDLE:
         switch(evento){
             case PULSACION_LARGA:
             cambiarEstado(ARMED);
+            eventoProcesado = true;
             break;
 
             default: break;
@@ -128,9 +151,11 @@ void clasificarEvento(EventoBoton evento){
         switch(evento){
             case PULSACION_LARGA:
             cambiarEstado(IDLE);
+            eventoProcesado = true;
             break;
             case PULSACION_CORTA:
             cambiarEstado(ASCENT);
+            eventoProcesado = true;
             break;
             default: break;
         }break;
@@ -139,6 +164,7 @@ void clasificarEvento(EventoBoton evento){
         switch(evento){
             case PULSACION_CORTA:
             cambiarEstado(DEPLOYMENT);
+            eventoProcesado = true;
             break;
             default: break;
         }break;
@@ -147,6 +173,7 @@ void clasificarEvento(EventoBoton evento){
         switch(evento){
             case PULSACION_CORTA:
             cambiarEstado(LANDED);
+            eventoProcesado = true;
             break;
             default: break;
         }break;
@@ -154,6 +181,15 @@ void clasificarEvento(EventoBoton evento){
         case LANDED:
         break;
         default: break;
+    }
+
+    if(eventoProcesado== false){
+        Serial.print("[");
+        Serial.print(millis());
+        Serial.print("ms] Evento ignorado: ");
+        Serial.print(nombreEvento(evento));
+        Serial.print(" en");
+        Serial.println(nombreEstado(estadoActual));
     }
 }
 
@@ -200,9 +236,7 @@ void loop() {
                 
                 EventoBoton evento = clasificarPulsacion(duracion);
                 
-                if(evento != NINGUNO){
-                    clasificarEvento(evento);
-                }
+                clasificarEvento(evento);
             }
         }
     }
